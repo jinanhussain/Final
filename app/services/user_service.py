@@ -39,7 +39,14 @@ class UserService:
 
     @classmethod
     async def get_by_id(cls, session: AsyncSession, user_id: UUID) -> Optional[User]:
-        return await cls._fetch_user(session, id=user_id)
+        logger.info(f"Attempting to get user by id: {user_id}")
+        user = await cls._fetch_user(session, id=user_id)
+        if user:
+            logger.info(f"User found: {user.id}")
+        else:
+            logger.info("User not found")
+        return user
+
 
     @classmethod
     async def get_by_nickname(cls, session: AsyncSession, nickname: str) -> Optional[User]:
