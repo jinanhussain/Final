@@ -42,7 +42,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     user_role: str = payload.get("role")
     if user_id is None or user_role is None:
         raise credentials_exception
-    return {"user_id": user_id, "role": user_role}
+    return {"id": user_id, "role": user_role}
 
 def require_role(role: str):
     def role_checker(current_user: dict = Depends(get_current_user)):
