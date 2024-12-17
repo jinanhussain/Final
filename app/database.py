@@ -23,3 +23,9 @@ class Database:
         if cls._session_factory is None:
             raise ValueError("Database not initialized. Call `initialize()` first.")
         return cls._session_factory
+
+    @classmethod
+    async def close(cls):
+        """Dispose of the database engine."""
+        if cls._engine:
+            await cls._engine.dispose()
