@@ -190,3 +190,109 @@ async def test_list_users_unauthorized(async_client, user_token):
         headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+@pytest.mark.asyncio
+async def test_successful_profile_update(async_client, verified_user, user_token):
+    headers = {"Authorization": f"Bearer {user_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/profile",
+        json={"bio": "Updated user bio"},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["bio"] == "Updated user bio"
+
+@pytest.mark.asyncio
+async def test_unauthorized_profile_update(async_client, verified_user, another_user_token):
+    headers = {"Authorization": f"Bearer {another_user_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/profile",
+        json={"bio": "Unauthorized update"},
+        headers=headers,
+    )
+    assert response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_invalid_profile_update_data(async_client, verified_user, user_token):
+    headers = {"Authorization": f"Bearer {user_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/profile",
+        json={"bio": "x" * 600},  # Exceeding max length for bio
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_partial_profile_update(async_client, verified_user, user_token):
+    headers = {"Authorization": f"Bearer {user_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/profile",
+        json={"first_name": "John"},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["first_name"] == "John"
+
+@pytest.mark.asyncio
+async def test_successful_professional_upgrade(async_client, admin_user, admin_token, verified_user):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_professional"] is True
+
+@pytest.mark.asyncio
+async def test_unauthorized_professional_upgrade(async_client, verified_user, user_token):
+    headers = {"Authorization": f"Bearer {user_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_professional_upgrade_user_not_found(async_client, admin_token):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    invalid_user_id = "00000000-0000-0000-0000-000000000000"  # Valid UUID format
+    response = await async_client.patch(
+        f"/users/{invalid_user_id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_professional_upgrade_idempotent(async_client, admin_user, admin_token, verified_user):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    # Upgrade user once
+    await async_client.patch(
+        f"/users/{verified_user.id}/upgrade-professional",
+        headers=headers,
+    )
+    # Upgrade again (idempotent behavior)
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_professional"] is True
+
+@pytest.mark.asyncio
+async def test_invalid_user_id_for_upgrade(async_client, admin_token):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    invalid_user_id = "not-a-valid-uuid"
+    response = await async_client.patch(
+        f"/users/{invalid_user_id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_professional_status_in_response(async_client, admin_user, admin_token, verified_user):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.patch(
+        f"/users/{verified_user.id}/upgrade-professional",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_professional"] is True

@@ -1,27 +1,11 @@
-"""
-File: test_database_operations.py
-
-Overview:
-This Python test file utilizes pytest to manage database states and HTTP clients for testing a web application built with FastAPI and SQLAlchemy. It includes detailed fixtures to mock the testing environment, ensuring each test is run in isolation with a consistent setup.
-
-Fixtures:
-- `async_client`: Manages an asynchronous HTTP client for testing interactions with the FastAPI application.
-- `db_session`: Handles database transactions to ensure a clean database state for each test.
-- User fixtures (`user`, `locked_user`, `verified_user`, etc.): Set up various user states to test different behaviors under diverse conditions.
-- `token`: Generates an authentication token for testing secured endpoints.
-- `initialize_database`: Prepares the database at the session start.
-- `setup_database`: Sets up and tears down the database before and after each test.
-"""
-
 # Standard library imports
 from builtins import Exception, range, str
 from datetime import timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 # Third-party imports
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -45,7 +29,6 @@ engine = create_async_engine(TEST_DATABASE_URL, echo=settings.debug)
 AsyncTestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 AsyncSessionScoped = scoped_session(AsyncTestingSessionLocal)
 
-
 @pytest.fixture
 def email_service():
     # Assuming the TemplateManager does not need any arguments for initialization
@@ -64,6 +47,7 @@ async def async_client(db_session):
         finally:
             app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="session", autouse=True)
 def initialize_database():
     try:
@@ -71,16 +55,17 @@ def initialize_database():
     except Exception as e:
         pytest.fail(f"Failed to initialize the database: {str(e)}")
 
-# this function setup and tears down (drops tales) for each test function, so you have a clean database for each test.
+
+# this function sets up and tears down (drops tables) for each test function
 @pytest.fixture(scope="function", autouse=True)
 async def setup_database():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
-        # you can comment out this line during development if you are debugging a single test
-         await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
 
 @pytest.fixture(scope="function")
 async def db_session(setup_database):
@@ -89,6 +74,20 @@ async def db_session(setup_database):
             yield session
         finally:
             await session.close()
+
+
+# New fixture for 'another_user_token'
+@pytest.fixture
+async def another_user_token(async_client, unverified_user):
+    # Login the second user to get a token
+    form_data = {"username": unverified_user.email, "password": "MySuperPassword$1234"}
+    response = await async_client.post(
+        "/login/", 
+        data=form_data, 
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    return response.json()["access_token"]
+
 
 @pytest.fixture(scope="function")
 async def locked_user(db_session):
@@ -109,6 +108,7 @@ async def locked_user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def user(db_session):
     user_data = {
@@ -125,6 +125,7 @@ async def user(db_session):
     db_session.add(user)
     await db_session.commit()
     return user
+
 
 @pytest.fixture(scope="function")
 async def verified_user(db_session):
@@ -143,6 +144,7 @@ async def verified_user(db_session):
     await db_session.commit()
     return user
 
+
 @pytest.fixture(scope="function")
 async def unverified_user(db_session):
     user_data = {
@@ -159,6 +161,7 @@ async def unverified_user(db_session):
     db_session.add(user)
     await db_session.commit()
     return user
+
 
 @pytest.fixture(scope="function")
 async def users_with_same_role_50_users(db_session):
@@ -180,6 +183,7 @@ async def users_with_same_role_50_users(db_session):
     await db_session.commit()
     return users
 
+
 @pytest.fixture
 async def admin_user(db_session: AsyncSession):
     user = User(
@@ -194,6 +198,7 @@ async def admin_user(db_session: AsyncSession):
     db_session.add(user)
     await db_session.commit()
     return user
+
 
 @pytest.fixture
 async def manager_user(db_session: AsyncSession):
@@ -210,30 +215,30 @@ async def manager_user(db_session: AsyncSession):
     await db_session.commit()
     return user
 
-# Configure a fixture for each type of user role you want to test
+
 @pytest.fixture(scope="function")
 def admin_token(admin_user):
-    # Assuming admin_user has an 'id' and 'role' attribute
     token_data = {"sub": str(admin_user.id), "role": admin_user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
+
 
 @pytest.fixture(scope="function")
 def manager_token(manager_user):
     token_data = {"sub": str(manager_user.id), "role": manager_user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
 
+
 @pytest.fixture(scope="function")
 def user_token(user):
     token_data = {"sub": str(user.id), "role": user.role.name}
     return create_access_token(data=token_data, expires_delta=timedelta(minutes=30))
 
+
 @pytest.fixture
 def email_service():
     if settings.send_real_mail == 'true':
-        # Return the real email service when specifically testing email functionality
         return EmailService()
     else:
-        # Otherwise, use a mock to prevent actual email sending
         mock_service = AsyncMock(spec=EmailService)
         mock_service.send_verification_email.return_value = None
         mock_service.send_user_email.return_value = None
