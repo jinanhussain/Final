@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     postgres_port: int = Field(default=5432, description="PostgreSQL port")
     postgres_db: str = Field(default="myappdb", description="PostgreSQL database name")
 
+    # Test Database Configuration (Optional)
+    test_database_url: str = Field(None, description="Test database connection URL")  # Optional for tests
+
     # Email Configuration (Mailtrap)
     smtp_server: str = Field(default="smtp.mailtrap.io", description="SMTP server for sending emails")
     smtp_port: int = Field(default=2525, description="SMTP server port")
@@ -49,6 +52,12 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+    @property
+    def database_url(self):
+        # Use the test database URL during testing if provided
+        return self.test_database_url if self.test_database_url else self.database_url
+
 
 # Instantiate the settings object
 settings = Settings()
