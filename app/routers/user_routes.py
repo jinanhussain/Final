@@ -83,7 +83,8 @@ async def upgrade_user_to_professional(
     user.is_professional = True
     await db.commit()
     await db.refresh(user)
-    return UserResponse.model_construct(**user.dict())
+    return UserResponse.model_construct(**user.__dict__)
+
 
 
 @router.post("/login/", response_model=TokenResponse, tags=["Login"])

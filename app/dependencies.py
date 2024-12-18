@@ -49,11 +49,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    payload = decode_token(token)
+    payload = decode_token(token)  # Ensure this decodes the JWT correctly
     if not payload:
         raise credentials_exception
 
-    user_id: str = payload.get("sub")
+    user_id: str = payload.get("sub")  # 'sub' is typically used for user id
     user_role: str = payload.get("role")
 
     if not user_id or not user_role:
