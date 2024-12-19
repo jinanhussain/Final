@@ -61,22 +61,22 @@ async def update_user_profile(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    # Check that the current user is trying to update their own profile
+    
     if str(current_user["user_id"]) != str(user_id):
         raise HTTPException(status_code=403, detail="You can only update your own profile.")
     
-    # Fetch the user to update
+    
     user = await UserService.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Extract the updated data (excluding any unset fields)
-    updated_data = user_update.dict(exclude_unset=True)  # Use dict() here
     
-    # Update the user profile using the service
+    updated_data = user_update.dict(exclude_unset=True) 
+    
+  
     updated_user = await UserService.update(db, user_id, updated_data)
     
-    # Return the updated user response
+
     return UserResponse.model_construct(**updated_user.dict())
 
 

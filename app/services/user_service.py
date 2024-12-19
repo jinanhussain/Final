@@ -54,10 +54,10 @@ class UserService:
         try:
             validated_data = UserCreate(**user_data).model_dump()
 
-            # Respect user-provided nickname or generate one if missing
+            
             if 'nickname' not in validated_data or not validated_data['nickname']:
                 new_nickname = generate_nickname()
-                # Ensure the generated nickname is unique
+               
                 while await cls.get_by_nickname(session, new_nickname):
                     new_nickname = generate_nickname()
                 validated_data['nickname'] = new_nickname
@@ -96,13 +96,13 @@ class UserService:
             await cls._execute_query(session, query)
             updated_user = await cls.get_by_id(session, user_id)
             if updated_user:
-                session.refresh(updated_user)  # Explicitly refresh the updated user object
+                session.refresh(updated_user) 
                 logger.info(f"User {user_id} updated successfully.")
                 return updated_user
             else:
                 logger.error(f"User {user_id} not found after update attempt.")
             return None
-        except Exception as e:  # Broad exception handling for debugging
+        except Exception as e: 
             logger.error(f"Error during user update: {e}")
             return None
 
@@ -173,7 +173,7 @@ class UserService:
         user = await cls.get_by_id(session, user_id)
         if user and user.verification_token == token:
             user.email_verified = True
-            user.verification_token = None  # Clear the token once used
+            user.verification_token = None  
             user.role = UserRole.AUTHENTICATED
             session.add(user)
             await session.commit()

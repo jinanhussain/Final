@@ -38,15 +38,15 @@ class Settings(BaseSettings):
     # Email Configuration (Mailtrap)
     smtp_server: str = Field(default="smtp.mailtrap.io", description="SMTP server for sending emails")
     smtp_port: int = Field(default=2525, description="SMTP server port")
-    smtp_username: str = Field(..., description="SMTP username")  # Required
-    smtp_password: str = Field(..., description="SMTP password")  # Required
+    smtp_username: str = Field(..., description="SMTP username")  
+    smtp_password: str = Field(..., description="SMTP password")  
     send_real_mail: bool = Field(default=False, description="Send real emails or use mock emails")
 
-    # Discord Configuration (Optional)
+    
     discord_bot_token: str = Field(default="NONE", description="Discord bot token")
     discord_channel_id: int = Field(default=1234567890, description="Discord channel ID for notifications")
 
-    # OpenAI Key Configuration (Optional)
+    
     openai_api_key: str = Field(default="NONE", description="OpenAI API Key for AI integration")
 
     class Config:
@@ -55,9 +55,9 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self):
-        # Use the test database URL during testing if provided
+        
         return self.test_database_url if self.test_database_url else self.database_url
 
 
-# Instantiate the settings object
+
 settings = Settings()
